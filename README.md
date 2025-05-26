@@ -1,31 +1,145 @@
-# Sistema de Agenda em Python
+# Sistema de Agenda
 
-Um sistema simples de agenda desenvolvido em Python para gerenciar contatos.
+Sistema completo de agenda com gerenciamento de contatos e compromissos, incluindo suporte a compromissos recorrentes.
 
 ## Funcionalidades
 
-- Adicionar novos contatos
-- Listar todos os contatos
-- Buscar contatos por nome ou telefone
-- Editar informações de contatos existentes
-- Excluir contatos
-- Armazenamento persistente em arquivo JSON
+### Contatos
+- Adicionar, editar e excluir contatos
+- Visualizar lista de contatos
+- Campos: nome, telefone, email e endereço
 
-## Como usar
+### Compromissos
+- Adicionar, editar e excluir compromissos
+- Visualizar lista de compromissos
+- Filtrar por período (hoje, próxima semana, próximo mês)
+- Suporte a compromissos recorrentes:
+  - Diários
+  - Semanais
+  - Dias específicos
+  - Mensais
+- Campos: título, data, horário de início e fim, descrição, participantes
 
-1. Certifique-se de ter Python 3.x instalado em seu sistema
-2. Execute o arquivo `agenda.py`:
-   ```
-   python agenda.py
-   ```
-3. Use o menu interativo para navegar entre as opções:
-   - 1: Adicionar novo contato
-   - 2: Listar todos os contatos
-   - 3: Buscar um contato
-   - 4: Editar um contato existente
-   - 5: Excluir um contato
-   - 6: Sair do programa
+## Tecnologias Utilizadas
 
-## Armazenamento
+### Backend
+- Python 3.11
+- FastAPI
+- SQLAlchemy
+- PostgreSQL
+- Alembic (migrações)
+- Prometheus (monitoramento)
 
-Os contatos são armazenados no arquivo `contatos.json` no mesmo diretório do programa. Este arquivo é criado automaticamente na primeira vez que um contato for adicionado. 
+### Frontend
+- React
+- Material-UI
+- Axios
+- Date-fns
+
+### Infraestrutura
+- Docker
+- Docker Compose
+- Grafana (monitoramento)
+
+## Requisitos
+
+- Docker
+- Docker Compose
+
+## Instalação e Execução
+
+1. Clone o repositório:
+```bash
+git clone <url-do-repositorio>
+cd agenda
+```
+
+2. Inicie os containers:
+```bash
+docker-compose up -d
+```
+
+3. Execute as migrações do banco de dados:
+```bash
+docker-compose exec backend alembic upgrade head
+```
+
+4. Acesse a aplicação:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- Documentação da API: http://localhost:8000/docs
+- Grafana: http://localhost:3001 (usuário: admin, senha: admin123)
+- Prometheus: http://localhost:9090
+
+## Estrutura do Projeto
+
+```
+.
+├── backend/
+│   ├── app/
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── database.py
+│   │   └── routers/
+│   ├── alembic/
+│   ├── requirements.txt
+│   └── Dockerfile
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   └── App.js
+│   ├── package.json
+│   └── Dockerfile
+├── prometheus/
+│   └── prometheus.yml
+└── docker-compose.yml
+```
+
+## Monitoramento
+
+O sistema inclui monitoramento completo usando Prometheus e Grafana:
+
+- Métricas da API (requisições, latência, erros)
+- Métricas do banco de dados
+- Dashboard personalizado no Grafana
+
+## Desenvolvimento
+
+Para desenvolvimento local:
+
+1. Instale as dependências do backend:
+```bash
+cd backend
+pip install -r requirements.txt
+```
+
+2. Instale as dependências do frontend:
+```bash
+cd frontend
+npm install
+```
+
+3. Execute o backend em modo de desenvolvimento:
+```bash
+cd backend
+uvicorn app.main:app --reload
+```
+
+4. Execute o frontend em modo de desenvolvimento:
+```bash
+cd frontend
+npm start
+```
+
+## Contribuição
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -am 'Adiciona nova feature'`)
+4. Push para a branch (`git push origin feature/nova-feature`)
+5. Crie um Pull Request
+
+## Licença
+
+Este projeto está licenciado sob a licença MIT - veja o arquivo LICENSE para detalhes. 
