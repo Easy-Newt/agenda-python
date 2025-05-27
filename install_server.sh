@@ -25,6 +25,17 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# Solicitar credenciais do GitHub
+print_message "Configurando acesso ao GitHub..."
+read -p "Digite seu usuário do GitHub: " GITHUB_USER
+read -sp "Digite seu token do GitHub (não será mostrado): " GITHUB_TOKEN
+echo ""
+
+if [ -z "$GITHUB_USER" ] || [ -z "$GITHUB_TOKEN" ]; then
+    print_error "Usuário ou token não fornecidos!"
+    exit 1
+fi
+
 # Diretório base
 BASE_DIR="/opt/agenda"
 mkdir -p $BASE_DIR
@@ -64,14 +75,28 @@ else
     print_warning "Docker Compose já está instalado"
 fi
 
+# Configurar Git com credenciais temporárias
+git config --global credential.helper store
+echo "https://$GITHUB_USER:$GITHUB_TOKEN@github.com" > ~/.git-credentials
+chmod 600 ~/.git-credentials
+
 # Clonar o repositório (se não existir)
 if [ ! -d "$BASE_DIR/.git" ]; then
     print_message "Clonando repositório..."
-    git clone https://github.com/seu-usuario/agenda-automacao.git .
+    git clone https://github.com/Easy-Newt/agenda-python.git .
+    if [ $? -ne 0 ]; then
+        print_error "Falha ao clonar repositório. Verifique suas credenciais do GitHub."
+        rm -f ~/.git-credentials
+        exit 1
+    fi
 else
     print_message "Atualizando repositório..."
     git pull
 fi
+
+# Remover credenciais do Git após o clone
+rm -f ~/.git-credentials
+git config --global --unset credential.helper
 
 # Criar arquivo .env
 print_message "Configurando variáveis de ambiente..."
