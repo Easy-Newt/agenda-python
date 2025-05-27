@@ -80,19 +80,37 @@ git config --global credential.helper store
 echo "https://$GITHUB_USER:$GITHUB_TOKEN@github.com" > ~/.git-credentials
 chmod 600 ~/.git-credentials
 
-# Clonar o repositório (se não existir)
-if [ ! -d "$BASE_DIR/.git" ]; then
-    print_message "Clonando repositório..."
-    git clone https://github.com/Easy-Newt/agenda-python.git .
-    if [ $? -ne 0 ]; then
-        print_error "Falha ao clonar repositório. Verifique suas credenciais do GitHub."
-        rm -f ~/.git-credentials
+# Verificar e preparar diretório
+if [ -d "$BASE_DIR/.git" ]; then
+    print_message "Repositório Git já existe, atualizando..."
+    cd $BASE_DIR
+    git pull
+elif [ -d "$BASE_DIR" ] && [ "$(ls -A $BASE_DIR)" ]; then
+    print_warning "Diretório $BASE_DIR não está vazio"
+    read -p "Deseja limpar o diretório antes de continuar? (s/N) " clean_dir
+    if [[ $clean_dir =~ ^[Ss]$ ]]; then
+        print_message "Limpando diretório..."
+        rm -rf $BASE_DIR/*
+        rm -rf $BASE_DIR/.[!.]*
+    else
+        print_error "Por favor, escolha um diretório vazio para a instalação"
         exit 1
     fi
-else
-    print_message "Atualizando repositório..."
-    git pull
 fi
+
+# Clonar o repositório
+print_message "Clonando repositório..."
+git clone https://github.com/Easy-Newt/agenda-python.git /tmp/agenda-temp
+if [ $? -ne 0 ]; then
+    print_error "Falha ao clonar repositório. Verifique suas credenciais do GitHub."
+    rm -f ~/.git-credentials
+    exit 1
+fi
+
+# Mover arquivos do repositório
+cp -r /tmp/agenda-temp/* $BASE_DIR/
+cp -r /tmp/agenda-temp/.[!.]* $BASE_DIR/ 2>/dev/null || true
+rm -rf /tmp/agenda-temp
 
 # Remover credenciais do Git após o clone
 rm -f ~/.git-credentials
@@ -318,6 +336,41 @@ cat > grafana/provisioning/dashboards/agenda-overview.json << EOL
 }
 EOL
 
+# Configurar PostgreSQL
+print_message "Configurando PostgreSQL..."
+
+# Criar arquivo de configuração do PostgreSQL
+cat > postgres/postgresql.conf << EOL
+# Configurações de Memória
+shared_buffers = 256MB
+work_mem = 16MB
+maintenance_work_mem = 64MB
+
+# Configurações de Write-Ahead Log
+wal_level = replica
+max_wal_senders = 10
+wal_keep_segments = 32
+
+# Configurações de Conexão
+max_connections = 100
+superuser_reserved_connections = 3
+
+# Configurações de Performance
+effective_cache_size = 1GB
+random_page_cost = 1.1
+checkpoint_completion_target = 0.9
+autovacuum = on
+EOL
+
+# Criar arquivo de configuração de acesso
+cat > postgres/pg_hba.conf << EOL
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+local   all            all                                     trust
+host    all            all             127.0.0.1/32           md5
+host    all            all             ::1/128                 md5
+host    all            all             0.0.0.0/0              md5
+EOL
+
 # Criar ou atualizar docker-compose.yml
 print_message "Configurando docker-compose.yml..."
 cat > docker-compose.yml << EOL
@@ -330,8 +383,18 @@ services:
       - POSTGRES_USER=\${POSTGRES_USER}
       - POSTGRES_PASSWORD=\${POSTGRES_PASSWORD}
       - POSTGRES_DB=\${POSTGRES_DB}
+      - POSTGRES_MAX_CONNECTIONS=100
+      - POSTGRES_SHARED_BUFFERS=256MB
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \${POSTGRES_USER} -d \${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - agenda-network
 
@@ -496,4 +559,18 @@ echo "docker-compose logs -f"
 echo -e "\n${GREEN}Para reiniciar os serviços:${NC}"
 echo "docker-compose restart"
 echo -e "\n${GREEN}Para parar os serviços:${NC}"
-echo "docker-compose down" 
+echo "docker-compose down"
+
+# Criar diretório para backups do PostgreSQL
+mkdir -p postgres/backups
+chmod 777 postgres/backups
+
+# Criar script de backup do PostgreSQL
+cat > postgres/backup.sh << EOL
+#!/bin/bash
+BACKUP_DIR="/var/lib/postgresql/backups"
+BACKUP_NAME="backup-\$(date +%Y%m%d-%H%M%S).sql"
+pg_dump -U \$POSTGRES_USER \$POSTGRES_DB > "\$BACKUP_DIR/\$BACKUP_NAME"
+find "\$BACKUP_DIR" -name "backup-*.sql" -mtime +7 -delete
+EOL
+chmod +x postgres/backup.sh 
