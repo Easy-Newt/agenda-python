@@ -100,7 +100,7 @@ fi
 
 # Clonar o repositório
 print_message "Clonando repositório..."
-git clone https://github.com/Easy-Newt/agenda-python.git /tmp/agenda-temp
+git clone https://github.com/Easy-Newt/agenda-python /tmp/agenda-temp
 if [ $? -ne 0 ]; then
     print_error "Falha ao clonar repositório. Verifique suas credenciais do GitHub."
     rm -f ~/.git-credentials
