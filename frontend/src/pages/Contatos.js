@@ -24,8 +24,9 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
+import { API_CONFIG } from '../config';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = API_CONFIG.baseURL;
 
 function Contatos() {
   const [contatos, setContatos] = useState([]);

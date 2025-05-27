@@ -37,8 +37,9 @@ import { LocalizationProvider, DatePicker, TimePicker } from '@mui/x-date-picker
 import ptBR from 'date-fns/locale/pt-BR';
 import { format, parse } from 'date-fns';
 import axios from 'axios';
+import { API_CONFIG } from '../config';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = API_CONFIG.baseURL;
 
 const diasSemana = [
   { value: 0, label: 'Segunda' },

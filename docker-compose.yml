@@ -13,6 +13,8 @@ services:
       - ./backend:/app
     networks:
       - agenda-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   frontend:
     build: ./frontend
@@ -25,6 +27,8 @@ services:
       - backend
     networks:
       - agenda-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   db:
     image: postgres:14
